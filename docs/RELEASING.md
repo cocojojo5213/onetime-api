@@ -40,6 +40,8 @@ The updater selects the entry matching the package type used to install the runn
 6. Create a new immutable `vX.Y.Z` tag and push it. Never move or overwrite a published tag.
 7. The workflow keeps the Release as a draft while matrix jobs upload assets. A final job verifies every installer-specific `latest.json` entry and publishes the Release only after the complete matrix succeeds.
 
+If a new tag build fails while the Release is still a draft, fix the workflow on `main` and dispatch **Build** with the existing unpublished tag in `releaseTag`. This recovery input must never be used to replace assets on an already public Release.
+
 ## Release verification
 
 A completed Release must contain normal installers, signature files, and `latest.json`. The final workflow job performs the manifest gate before publication. Verify at least:

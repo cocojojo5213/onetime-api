@@ -4,10 +4,17 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      releaseTag:
+        description: "Existing unpublished tag to rebuild into its draft Release"
+        required: false
+        type: string
 
 jobs:
   build:
     name: ${{ matrix.name }}
+    env:
+      RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.releaseTag || '' }}
     permissions:
       contents: write
     strategy:
@@ -29,7 +36,7 @@ jobs:
             args: "--bundles nsis,msi"
           - name: macOS Universal
             platform: macos-latest
-            args: "--target universal-apple-darwin --bundles dmg"
+            args: "--target universal-apple-darwin --bundles app,dmg"
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v7
@@ -61,15 +68,15 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: ${{ github.ref_type == 'tag' && format('onetime-api {0}', github.ref_name) || '' }}
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: ${{ env.RELEASE_TAG != '' && format('onetime-api {0}', env.RELEASE_TAG) || '' }}
           releaseBody: |
             ### Download / 下载
             - **Ubuntu / Debian:** `.deb` packages are available as `amd64` for x86_64 systems and `arm64` for ARM64 systems.
             - **Portable Linux:** AppImages are published as `amd64` and `aarch64`. Browser downloads generally require `chmod +x <file>.AppImage` before the first launch.
             - **Windows:** the `setup.exe` asset is the standard installer. **macOS:** the universal `.dmg` supports Intel and Apple Silicon.
             - Versions with the signed updater can download, verify, install, and restart directly inside the application.
-          releaseDraft: true
+          releaseDraft: ${{ env.RELEASE_TAG != '' }}
           generateReleaseNotes: true
           uploadUpdaterJson: true
           updaterJsonPreferNsis: true
@@ -86,9 +93,11 @@ jobs:
 
   publish:
     name: Publish completed Release
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' || inputs.releaseTag != ''
     needs: build
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.releaseTag }}
     permissions:
       contents: write
     steps:
@@ -97,8 +106,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tmp="$(mktemp -d)"
-          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir "$tmp"
-          version="${GITHUB_REF_NAME#v}"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir "$tmp"
+          version="${RELEASE_TAG#v}"
           jq -e --arg version "$version" '
             . as $manifest |
             $manifest.version == $version and
@@ -112,12 +121,12 @@ jobs:
               "darwin-x86_64-app",
               "darwin-aarch64-app"
             ] | all(. as $target |
-              ($manifest.platforms[$target].url | startswith("https://")) and
-              ($manifest.platforms[$target].signature | length > 0)
+              (($manifest.platforms[$target].url // "") | startswith("https://")) and
+              (($manifest.platforms[$target].signature // "") | length > 0)
             ))
           ' "$tmp/latest.json"
 
       - name: Publish Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false
+        run: gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
