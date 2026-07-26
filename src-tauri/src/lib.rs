@@ -1,4 +1,5 @@
 mod launcher;
+mod updater;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -122,7 +123,16 @@ fn launch(profile_id: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![app_version, load_config, save_config, launch])
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updater::PendingUpdate::default())
+        .invoke_handler(tauri::generate_handler![
+            app_version,
+            load_config,
+            save_config,
+            launch,
+            updater::fetch_update,
+            updater::install_update,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

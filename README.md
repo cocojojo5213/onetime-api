@@ -69,9 +69,11 @@ chmod +x onetime-api_*.AppImage
 
 ## Updates
 
-The application checks the latest stable GitHub Release after launch and caches the result for up to six hours. The sidebar displays the installed version and update status; the version entry can trigger another check and open the latest Release page.
+The application checks a signed update manifest after launch. When a newer version is available, the version dialog can download, verify, install, and restart the application without requiring a browser download. Every update package is verified against the public signing key embedded in the application before installation.
 
-Installation always requires user confirmation. The application never replaces an installed binary silently.
+Installation remains user-confirmed: downloading starts only after **Download and install** is selected. Linux `.deb` updates request administrator authorization through the operating system; AppImage updates require the current file to be writable.
+
+Versions up to `v0.2.1` only contain the browser-based update check and must install `v0.2.2` manually once. Releases after that bridge version support the in-app update flow.
 
 ## Building from source
 
@@ -82,6 +84,8 @@ npm install
 npm run tauri dev
 npm run tauri build
 ```
+
+Maintainer signing and release procedures are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ## Security
 

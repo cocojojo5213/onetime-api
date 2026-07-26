@@ -1,4 +1,4 @@
-const { invoke } = window.__TAURI__.core;
+const { Channel, invoke } = window.__TAURI__.core;
 const { openUrl } = window.__TAURI__.opener;
 
 let config = { agents: [], profiles: [] };
@@ -16,18 +16,19 @@ const agentsList = $("agents-list");
 const searchInput = $("profile-search");
 const updateDialog = $("update-dialog");
 
-const RELEASES_API = "https://api.github.com/repos/cocojojo5213/onetime-api/releases/latest";
 const RELEASES_PAGE = "https://github.com/cocojojo5213/onetime-api/releases/latest";
-const UPDATE_CACHE_KEY = "onetime-api-update-check";
-const UPDATE_CACHE_TTL = 6 * 60 * 60 * 1000;
 
 const updateState = {
   current: "",
   latest: "",
   releaseUrl: RELEASES_PAGE,
   checking: false,
+  installing: false,
+  canInstall: false,
   error: "",
-  checkedAt: 0,
+  downloaded: 0,
+  contentLength: 0,
+  phase: "",
 };
 
 function icon(name, className = "icon") {
@@ -85,13 +86,30 @@ function updateAvailable() {
   );
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unit = units[0];
+  for (let index = 1; index < units.length && value >= 1024; index += 1) {
+    value /= 1024;
+    unit = units[index];
+  }
+  return `${value >= 10 || unit === "B" ? value.toFixed(0) : value.toFixed(1)} ${unit}`;
+}
+
 function renderUpdateState() {
   const available = updateAvailable();
+  const busy = updateState.checking || updateState.installing;
   const versionButton = $("version-button");
   const versionSummary = $("version-summary");
   const latestVersion = $("latest-version");
   const updateMessage = $("update-message");
   const checkButton = $("update-check");
+  const installButton = $("update-download");
+  const progress = $("update-progress");
+  const progressBar = $("update-progress-bar");
+  const progressLabel = $("update-progress-label");
 
   $("version-label").textContent = updateState.current ? `v${updateState.current}` : "版本未知";
   $("current-version").textContent = updateState.current ? `v${updateState.current}` : "读取失败";
@@ -101,102 +119,154 @@ function renderUpdateState() {
   versionButton.classList.toggle("update-available", available);
   versionButton.classList.toggle("checking", updateState.checking);
   checkButton.classList.toggle("checking", updateState.checking);
-  checkButton.disabled = updateState.checking;
+  checkButton.disabled = busy;
+  installButton.disabled = busy;
+  $("update-close").disabled = updateState.installing;
+  $("update-close-icon").disabled = updateState.installing;
 
   updateMessage.classList.toggle("error", Boolean(updateState.error));
   if (updateState.checking) {
     versionSummary.textContent = "正在检查更新";
-    updateMessage.textContent = "正在检查 GitHub Releases。";
+    updateMessage.textContent = "正在检查已签名的更新清单。";
+  } else if (updateState.installing) {
+    versionSummary.textContent = "正在更新";
+    if (updateState.phase === "installing") {
+      updateMessage.textContent = "下载和签名校验已完成，正在安装更新。Linux 安装包可能会弹出系统权限确认。";
+    } else if (updateState.phase === "restarting") {
+      updateMessage.textContent = "更新已安装，应用即将重新启动。";
+    } else {
+      updateMessage.textContent = "正在下载并校验更新，请保持应用运行。";
+    }
   } else if (updateState.error) {
-    versionSummary.textContent = "点击重试";
+    versionSummary.textContent = "更新失败";
     updateMessage.textContent = updateState.error;
   } else if (available) {
     versionSummary.textContent = `发现 v${updateState.latest}`;
-    updateMessage.textContent = `新版本 v${updateState.latest} 已发布，可以前往下载。`;
+    updateMessage.textContent = `新版本 v${updateState.latest} 已通过签名清单发布，可直接在应用内安装。`;
   } else if (updateState.latest) {
     versionSummary.textContent = "已是最新版本";
-    updateMessage.textContent = "当前版本已经是 GitHub 上的最新正式版本。";
+    updateMessage.textContent = "当前版本已经是最新正式版本。";
   } else {
     versionSummary.textContent = "点击检查更新";
-    updateMessage.textContent = "尚未检查 GitHub Releases。";
+    updateMessage.textContent = "尚未检查签名更新清单。";
   }
 
-  $("update-download").querySelector("span").textContent = available
-    ? `下载 v${updateState.latest}`
-    : "查看发布页";
+  progress.hidden = !updateState.installing;
+  if (updateState.installing) {
+    const determinate = updateState.contentLength > 0;
+    const percent = determinate
+      ? Math.min(100, (updateState.downloaded / updateState.contentLength) * 100)
+      : 0;
+    progressBar.style.width = `${percent}%`;
+    progress.classList.toggle("indeterminate", !determinate && updateState.phase === "downloading");
+
+    if (updateState.phase === "installing") {
+      progressLabel.textContent = "正在安装并等待系统确认";
+    } else if (updateState.phase === "restarting") {
+      progressLabel.textContent = "安装完成，正在重启";
+    } else if (determinate) {
+      progressLabel.textContent = `${Math.round(percent)}% · ${formatBytes(updateState.downloaded)} / ${formatBytes(updateState.contentLength)}`;
+    } else {
+      progressLabel.textContent = updateState.downloaded
+        ? `已下载 ${formatBytes(updateState.downloaded)}`
+        : "准备下载";
+    }
+  }
+
+  const installLabel = installButton.querySelector("span");
+  const installIcon = installButton.querySelector("use");
+  if (updateState.installing) {
+    installLabel.textContent = updateState.phase === "restarting"
+      ? "正在重启"
+      : updateState.phase === "installing"
+        ? "正在安装"
+        : "正在下载";
+    installIcon.setAttribute("href", "#icon-download");
+  } else if (available && updateState.canInstall) {
+    installLabel.textContent = `下载并安装 v${updateState.latest}`;
+    installIcon.setAttribute("href", "#icon-download");
+  } else {
+    installLabel.textContent = "查看发布页";
+    installIcon.setAttribute("href", "#icon-external-link");
+  }
 }
 
-function readUpdateCache() {
-  try {
-    const cached = JSON.parse(localStorage.getItem(UPDATE_CACHE_KEY) || "null");
-    if (!cached?.latest || !cached?.checkedAt) return null;
-    return cached;
-  } catch {
-    return null;
-  }
-}
-
-function writeUpdateCache() {
-  try {
-    localStorage.setItem(UPDATE_CACHE_KEY, JSON.stringify({
-      latest: updateState.latest,
-      releaseUrl: updateState.releaseUrl,
-      checkedAt: updateState.checkedAt,
-    }));
-  } catch {
-    // Update caching is optional.
-  }
-}
-
-async function checkForUpdates({ force = false, notify = false } = {}) {
-  if (updateState.checking) return;
-
-  const cached = readUpdateCache();
-  if (!force && cached && Date.now() - cached.checkedAt < UPDATE_CACHE_TTL) {
-    updateState.latest = normalizeVersion(cached.latest);
-    updateState.releaseUrl = cached.releaseUrl || RELEASES_PAGE;
-    updateState.checkedAt = cached.checkedAt;
-    updateState.error = "";
-    renderUpdateState();
-    return;
-  }
+async function checkForUpdates({ notify = false } = {}) {
+  if (updateState.checking || updateState.installing) return false;
 
   updateState.checking = true;
+  updateState.canInstall = false;
   updateState.error = "";
   renderUpdateState();
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const response = await fetch(RELEASES_API, {
-      cache: "no-store",
-      headers: { Accept: "application/vnd.github+json" },
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`GitHub API 返回 ${response.status}`);
-
-    const release = await response.json();
-    const latest = normalizeVersion(release.tag_name);
-    if (!latest) throw new Error("最新 Release 没有有效版本号");
-
-    updateState.latest = latest;
-    updateState.releaseUrl = release.html_url || RELEASES_PAGE;
-    updateState.checkedAt = Date.now();
+    const update = await invoke("fetch_update");
+    if (update) {
+      updateState.current = normalizeVersion(update.currentVersion || updateState.current);
+      updateState.latest = normalizeVersion(update.version);
+      updateState.canInstall = true;
+    } else {
+      updateState.latest = updateState.current;
+    }
     updateState.error = "";
-    writeUpdateCache();
 
     if (notify) {
-      toast(updateAvailable() ? `发现新版本 v${latest}` : "当前已经是最新版本");
+      toast(updateAvailable() ? `发现新版本 v${updateState.latest}` : "当前已经是最新版本");
     }
+    return updateAvailable();
   } catch (error) {
-    updateState.error = error?.name === "AbortError"
-      ? "检查更新超时，请稍后重试。"
-      : `暂时无法检查更新：${error}`;
+    updateState.error = `暂时无法检查更新：${error}`;
     if (notify) toast(updateState.error, true);
+    return false;
   } finally {
-    clearTimeout(timeout);
     updateState.checking = false;
     renderUpdateState();
+  }
+}
+
+async function installAvailableUpdate() {
+  if (!updateAvailable() || !updateState.canInstall) {
+    await openUrl(updateState.releaseUrl || RELEASES_PAGE);
+    return;
+  }
+
+  updateState.installing = true;
+  updateState.canInstall = false;
+  updateState.error = "";
+  updateState.downloaded = 0;
+  updateState.contentLength = 0;
+  updateState.phase = "downloading";
+  renderUpdateState();
+
+  const onEvent = new Channel();
+  onEvent.onmessage = (message) => {
+    switch (message.event) {
+      case "Started":
+        updateState.contentLength = Number(message.data?.contentLength || 0);
+        updateState.phase = "downloading";
+        break;
+      case "Progress":
+        updateState.downloaded += Number(message.data?.chunkLength || 0);
+        break;
+      case "Installing":
+        updateState.phase = "installing";
+        break;
+      case "Finished":
+        updateState.phase = "restarting";
+        break;
+      default:
+        break;
+    }
+    renderUpdateState();
+  };
+
+  try {
+    await invoke("install_update", { onEvent });
+  } catch (error) {
+    updateState.installing = false;
+    updateState.error = `自动更新失败：${error}`;
+    renderUpdateState();
+    toast("自动更新失败，可重新检查或打开发布页", true);
   }
 }
 
@@ -535,23 +605,24 @@ function openUpdateDialog() {
   renderUpdateState();
   updateDialog.showModal();
   if (!updateState.latest && !updateState.checking) {
-    checkForUpdates({ force: true });
+    checkForUpdates();
   }
 }
 
 function closeUpdateDialog() {
+  if (updateState.installing) return;
   updateDialog.close();
 }
 
 $("version-button").addEventListener("click", openUpdateDialog);
 $("update-close").addEventListener("click", closeUpdateDialog);
 $("update-close-icon").addEventListener("click", closeUpdateDialog);
-$("update-check").addEventListener("click", () => checkForUpdates({ force: true, notify: true }));
+$("update-check").addEventListener("click", () => checkForUpdates({ notify: true }));
 $("update-download").addEventListener("click", async () => {
   try {
-    await openUrl(updateState.releaseUrl || RELEASES_PAGE);
+    await installAvailableUpdate();
   } catch (error) {
-    toast(`无法打开发布页：${error}`, true);
+    toast(`无法处理更新：${error}`, true);
   }
 });
 

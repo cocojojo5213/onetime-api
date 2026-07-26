@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.2] - 2026-07-26
+
+### Added
+
+- Added a signed in-app updater with download progress, package verification, installation, and application restart.
+- Added automatic update support for Linux `.deb` and AppImage packages, Windows NSIS/MSI installers, and macOS application bundles.
+
+### Changed
+
+- Replaced the browser-only update action with an in-app “Download and install” flow while retaining the Release page as a fallback.
+- Updated the release pipeline to publish signed updater artifacts and a multi-installer `latest.json` manifest.
+
 ## [0.2.1] - 2026-07-26
 
 ### Changed

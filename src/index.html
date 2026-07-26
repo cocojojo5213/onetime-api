@@ -96,6 +96,9 @@
           <path d="M15 3h6v6M10 14 21 3" />
           <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
         </symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24">
+          <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+        </symbol>
       </defs>
     </svg>
 
@@ -327,9 +330,15 @@
             </div>
           </div>
           <div id="update-message" class="update-message" role="status" aria-live="polite">
-            正在检查 GitHub Releases。
+            正在检查已签名的更新清单。
           </div>
-          <p class="update-note">检测到新版本后，可前往发布页下载与你系统架构匹配的安装包。</p>
+          <div id="update-progress" class="update-progress" aria-live="polite" hidden>
+            <div class="update-progress-track" aria-hidden="true">
+              <span id="update-progress-bar"></span>
+            </div>
+            <span id="update-progress-label">准备下载</span>
+          </div>
+          <p class="update-note">更新包会先在本地验证发布签名。Linux <code>.deb</code> 安装时，系统会请求管理员权限。</p>
         </div>
 
         <footer class="modal-actions split-actions">
@@ -340,8 +349,8 @@
           <div>
             <button type="button" id="update-close" class="text-button">关闭</button>
             <button type="button" id="update-download" class="primary-button">
-              <svg class="icon"><use href="#icon-external-link"></use></svg>
-              <span>查看发布页</span>
+              <svg class="icon"><use href="#icon-download"></use></svg>
+              <span>检查后安装</span>
             </button>
           </div>
         </footer>
