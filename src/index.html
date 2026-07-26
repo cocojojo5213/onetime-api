@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>onetime-api</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="/main.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <h1>onetime-api</h1>
+      <div class="header-actions">
+        <button id="btn-agents" class="ghost">Agent 模板</button>
+        <button id="btn-add">＋ 新增配置</button>
+      </div>
+    </header>
+
+    <main id="profile-list"></main>
+    <p id="empty-hint" class="hint" hidden>还没有配置。点右上角「＋ 新增配置」，填入 base URL 和 API key。</p>
+
+    <dialog id="profile-dialog">
+      <form id="profile-form" method="dialog">
+        <h2 id="profile-dialog-title">新增配置</h2>
+        <label>名称 <input name="name" required placeholder="例如：某中转-0726" /></label>
+        <label>Base URL <input name="base_url" required placeholder="https://api.example.com" /></label>
+        <label>API Key
+          <span class="key-row">
+            <input name="api_key" type="password" required placeholder="sk-..." />
+            <button type="button" id="toggle-key" class="ghost small">👁</button>
+          </span>
+        </label>
+        <label>Agent <select name="agent_id" id="agent-select"></select></label>
+        <label>工作目录（可选） <input name="workdir" placeholder="留空 = 默认目录" /></label>
+        <div class="dialog-actions">
+          <button type="button" class="ghost" id="profile-cancel">取消</button>
+          <button type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="agents-dialog">
+      <div class="agents-body">
+        <h2>Agent 模板</h2>
+        <p class="hint">env 中用 <code>{base_url}</code> 和 <code>{api_key}</code> 作占位符；每行一条 <code>变量名=值</code>。</p>
+        <div id="agents-list"></div>
+        <div class="dialog-actions">
+          <button type="button" class="ghost" id="agent-new">＋ 新模板</button>
+          <button type="button" class="ghost" id="agents-close">关闭</button>
+          <button type="button" id="agents-save">保存全部</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div id="toast" hidden></div>
+  </body>
+</html>
