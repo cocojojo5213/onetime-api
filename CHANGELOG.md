@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Replaced the application branding with a new scalable icon and regenerated Windows, macOS, and Linux icon assets.
+
 ## [0.2.0] - 2026-07-26
 
 ### Added

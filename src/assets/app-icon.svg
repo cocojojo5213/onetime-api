@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="tile" x1="188" y1="132" x2="854" y2="916" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24927C"/>
+      <stop offset="0.48" stop-color="#167765"/>
+      <stop offset="1" stop-color="#0B5549"/>
+    </linearGradient>
+    <radialGradient id="light" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(278 214) rotate(47) scale(520 500)">
+      <stop stop-color="#88D5C4" stop-opacity="0.36"/>
+      <stop offset="0.58" stop-color="#4EB39E" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#167765" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="token" x1="477" y1="440" x2="596" y2="589" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD666"/>
+      <stop offset="0.5" stop-color="#F3B734"/>
+      <stop offset="1" stop-color="#E99A1A"/>
+    </linearGradient>
+    <filter id="tileShadow" x="28" y="38" width="968" height="978" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#163C34" flood-opacity="0.22"/>
+    </filter>
+    <filter id="symbolShadow" x="174" y="222" width="676" height="604" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="13" stdDeviation="13" flood-color="#073F35" flood-opacity="0.25"/>
+    </filter>
+    <filter id="tokenGlow" x="392" y="372" width="292" height="280" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <clipPath id="tileClip">
+      <rect x="76" y="64" width="872" height="872" rx="218"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#tileShadow)">
+    <rect x="76" y="64" width="872" height="872" rx="218" fill="url(#tile)"/>
+  </g>
+
+  <g clip-path="url(#tileClip)">
+    <rect x="76" y="64" width="872" height="872" rx="218" fill="url(#light)"/>
+    <path d="M130 792C307 665 581 744 923 549V936H76V838C94 823 112 808 130 792Z" fill="#064A40" fill-opacity="0.13"/>
+    <path d="M130 115H894" stroke="#CBF3E9" stroke-opacity="0.2" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g filter="url(#symbolShadow)" stroke="#FFF9E9" stroke-width="84" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M410 280H370C318 280 300 312 300 360V420C300 472 278 498 232 512C278 526 300 552 300 604V664C300 712 318 744 370 744H410"/>
+    <path d="M614 280H654C706 280 724 312 724 360V420C724 472 746 498 792 512C746 526 724 552 724 604V664C724 712 706 744 654 744H614"/>
+  </g>
+
+  <ellipse cx="538" cy="514" rx="124" ry="118" fill="#FFC84A" fill-opacity="0.22" filter="url(#tokenGlow)"/>
+  <path d="M397 512C429 488 462 487 493 499V525C462 537 429 536 397 512Z" fill="#F3B734" fill-opacity="0.38"/>
+  <path d="M433 512C457 498 478 498 501 505V519C478 526 457 526 433 512Z" fill="#FFD45B" fill-opacity="0.72"/>
+  <circle cx="548" cy="512" r="78" fill="url(#token)"/>
+  <circle cx="548" cy="512" r="72" stroke="#FFE28D" stroke-opacity="0.32" stroke-width="6"/>
+  <ellipse cx="522" cy="484" rx="24" ry="18" transform="rotate(-34 522 484)" fill="#FFF0AF" fill-opacity="0.72"/>
+</svg>
