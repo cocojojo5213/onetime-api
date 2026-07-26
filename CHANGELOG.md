@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3] - 2026-07-26
+
+### Changed
+
+- Published a signed patch release for end-to-end verification of the `v0.2.2` in-app updater.
+- Kept the configuration format, CLI launch behavior, and updater trust key unchanged.
+
 ## [0.2.2] - 2026-07-26
 
 ### Added
