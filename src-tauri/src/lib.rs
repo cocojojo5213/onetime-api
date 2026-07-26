@@ -65,6 +65,11 @@ fn config_path() -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
+fn app_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
+#[tauri::command]
 fn load_config() -> Result<Config, String> {
     let path = config_path()?;
     if !path.exists() {
@@ -117,7 +122,7 @@ fn launch(profile_id: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![load_config, save_config, launch])
+        .invoke_handler(tauri::generate_handler![app_version, load_config, save_config, launch])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

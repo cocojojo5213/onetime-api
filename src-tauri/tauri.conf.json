@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "onetime-api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "com.ubuntu.onetime-api",
   "build": {
     "frontendDist": "../src"
@@ -10,9 +10,12 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "onetime-api · 一次性 API 启动器",
-        "width": 720,
-        "height": 560
+        "title": "OneTime API · 一次性 API 启动器",
+        "width": 860,
+        "height": 620,
+        "minWidth": 700,
+        "minHeight": 520,
+        "center": true
       }
     ],
     "security": {
@@ -22,6 +25,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "Launch CLI agents with temporary API credentials",
+    "longDescription": "Store short-lived API endpoints and keys, then launch CLI agents in an isolated terminal environment without changing global configuration.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

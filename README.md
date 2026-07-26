@@ -25,9 +25,28 @@ The key only enters that terminal's process environment. On macOS/Linux the temp
 
 ## Install
 
-Grab a package from [Releases](https://github.com/cocojojo5213/onetime-api/releases) — Windows (.msi), macOS (.dmg), Linux (.deb/.AppImage). CI builds them on every tag.
+[Releases](https://github.com/cocojojo5213/onetime-api/releases) provides Windows, macOS, and Linux packages. Linux is built for both common 64-bit CPU architectures:
 
-To build yourself you need Rust and Node 18+, plus the webkit2gtk stack on Linux (see [Tauri docs](https://tauri.app/start/prerequisites/)):
+| Your system | Asset suffix |
+|---|---|
+| Intel / AMD 64-bit (`x86_64`) | `amd64` |
+| ARM 64-bit (`aarch64` / `arm64`) | `arm64` |
+
+On Ubuntu or Debian, download the matching `.deb`. It can usually be opened with the system software installer, or installed from the download directory:
+
+```bash
+sudo apt install ./onetime-api_*_amd64.deb   # Intel / AMD
+sudo apt install ./onetime-api_*_arm64.deb   # ARM64
+```
+
+The `.AppImage` is portable, but browser downloads do not preserve Linux executable permissions. After choosing the matching architecture, run this once:
+
+```bash
+chmod +x onetime-api_*.AppImage
+./onetime-api_*.AppImage
+```
+
+To build it yourself you need Rust and Node 18+, plus the webkit2gtk stack on Linux (see [Tauri docs](https://tauri.app/start/prerequisites/)):
 
 ```bash
 npm install
@@ -35,8 +54,16 @@ npm run tauri dev
 npm run tauri build
 ```
 
+## Updates
+
+The app automatically checks GitHub Releases after launch and caches the result for up to six hours. The sidebar shows the current version and update status; click it to check again or open the latest release page.
+
+Installation always requires user confirmation—the app never replaces itself silently. Linux users must still choose the `.deb` or `.AppImage` matching their CPU architecture.
+
 ## Notes
 
 Config lives at `~/.config/onetime-api/config.json` (`%APPDATA%\onetime-api` on Windows). Keys are stored in plain text — don't sync that file anywhere.
 
 License: MIT
+
+Thanks to the [Linux.do](https://linux.do/) community for its support.

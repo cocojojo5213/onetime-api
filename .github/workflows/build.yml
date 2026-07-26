@@ -7,18 +7,29 @@ on:
 
 jobs:
   build:
+    name: ${{ matrix.name }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: ubuntu-22.04
-            args: ""
-          - platform: windows-latest
-            args: ""
-          - platform: macos-latest
-            args: "--target universal-apple-darwin"
+          - name: Linux x64
+            platform: ubuntu-22.04
+            args: "--bundles deb,appimage"
+            linux: true
+            deb_arch: amd64
+          - name: Linux ARM64
+            platform: ubuntu-22.04-arm
+            args: "--bundles deb,appimage"
+            linux: true
+            deb_arch: arm64
+          - name: Windows x64
+            platform: windows-latest
+            args: "--bundles nsis,msi"
+          - name: macOS Universal
+            platform: macos-latest
+            args: "--target universal-apple-darwin --bundles dmg"
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -26,22 +37,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.linux == true
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
 
-      - run: npm install
+      - run: npm ci
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -49,5 +61,21 @@ jobs:
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           releaseName: ${{ github.ref_type == 'tag' && format('onetime-api {0}', github.ref_name) || '' }}
-          releaseDraft: true
+          releaseBody: |
+            ### Download / 下载
+            - **Ubuntu / Debian:** choose the `.deb` matching your CPU — `amd64` for Intel/AMD, `arm64` for ARM devices. This is the recommended double-click install package.
+            - **Portable Linux:** AppImage files also need the matching CPU architecture. Browsers do not preserve the executable bit, so run `chmod +x <file>.AppImage` once before opening.
+            - **Windows:** use `setup.exe` for the simplest install. **macOS:** use the universal `.dmg`.
+            - The app checks this page for new versions automatically; installation remains user-confirmed.
+          releaseDraft: false
+          generateReleaseNotes: true
           args: ${{ matrix.args }}
+
+      - name: Verify Linux package architecture
+        if: matrix.linux == true
+        shell: bash
+        run: |
+          deb="$(find src-tauri/target/release/bundle/deb -maxdepth 1 -name '*.deb' -print -quit)"
+          test -n "$deb"
+          actual_arch="$(dpkg-deb --field "$deb" Architecture)"
+          test "$actual_arch" = "${{ matrix.deb_arch }}"
