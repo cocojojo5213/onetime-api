@@ -2,51 +2,80 @@
 
 [English](README.md) | 中文
 
-给临时 API 用的启动器。
+`onetime-api` 是面向临时或短期 API 凭据的跨平台桌面启动器。
 
-经常从中转站拿到一些短期的 base URL + key，想在 codex、claude code 这类 CLI 上用，每次都得改各家的配置文件，用完还得改回去。这个工具把这些 API 存成条目，点启动直接弹一个注好环境变量的终端，全局配置不动。
+应用以独立条目保存 Base URL、API Key、CLI Agent 和工作目录。启动配置时，所需环境变量仅注入新终端的子进程，不修改 Claude Code、Codex、Pi 等工具的全局配置。
 
-## 用法
+## 功能
 
-添加一条配置：名称、base URL、key，选一个 agent，保存。之后每次点「启动」就行。
+- 管理多组临时 API 配置
+- 为不同 CLI Agent 定义启动命令和环境变量模板
+- 在独立终端中启动 Agent
+- 支持配置搜索、明亮/深色主题和启动状态反馈
+- 自动检查 GitHub Releases，并提供手动下载入口
+- 支持 Windows、macOS、Linux x64 和 Linux ARM64
 
-启动时注入的变量：
+## 使用
 
-| agent | 环境变量 |
+创建配置时填写名称、Base URL、API Key，并选择 Agent 模板。工作目录为可选项。
+
+默认模板及其环境变量：
+
+| Agent | 环境变量 |
 |---|---|
-| claude code | `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` |
-| codex | `OPENAI_BASE_URL`, `OPENAI_API_KEY` |
-| grokbuild | `GROK_BASE_URL`, `GROK_API_KEY` |
-| pi | `PI_BASE_URL`, `PI_API_KEY` |
+| Claude Code | `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` |
+| Codex | `OPENAI_BASE_URL`, `OPENAI_API_KEY` |
+| GrokBuild | `GROK_BASE_URL`, `GROK_API_KEY` |
+| Pi | `PI_BASE_URL`, `PI_API_KEY` |
 
-变量名不对或者要加别的工具，在「Agent 模板」里改。模板就是一条命令加一组环境变量，`{base_url}` 和 `{api_key}` 是占位符。
+如需调整变量名或添加其他工具，可在「Agent 模板」中配置启动命令和环境变量。模板支持 `{base_url}` 和 `{api_key}` 占位符。
 
-key 只进那个终端的子进程环境。macOS/Linux 下中转用的临时脚本执行时会自删。
+macOS 和 Linux 使用的临时启动脚本会在执行时自动删除。API Key 仅进入所启动终端的子进程环境。
 
 ## 安装
 
-[Releases](https://github.com/cocojojo5213/onetime-api/releases) 会提供 Windows、macOS 和 Linux 安装包。Linux 同时构建两种 CPU 架构：
+安装包发布在 [GitHub Releases](https://github.com/cocojojo5213/onetime-api/releases)。
 
-| 你的系统 | 选择的资产后缀 |
-|---|---|
-| Intel / AMD 64 位（`x86_64`） | `amd64` |
-| ARM 64 位（`aarch64` / `arm64`） | `arm64` |
+| 平台 | CPU 架构 | 推荐资产 |
+|---|---|---|
+| Windows | x86_64 | `_x64-setup.exe` |
+| macOS | Intel / Apple Silicon | `_universal.dmg` |
+| Ubuntu / Debian | x86_64 | `_amd64.deb` |
+| Ubuntu / Debian | ARM64 | `_arm64.deb` |
+| 其他 Linux 发行版 | x86_64 | `_amd64.AppImage` |
+| 其他 Linux 发行版 | ARM64 | `_aarch64.AppImage` |
 
-Ubuntu / Debian 建议下载对应架构的 `.deb`，通常可以双击交给系统的软件安装器；也可以在下载目录运行：
+Linux 架构可通过以下命令确认：
 
 ```bash
-sudo apt install ./onetime-api_*_amd64.deb   # Intel / AMD
-sudo apt install ./onetime-api_*_arm64.deb   # ARM64
+uname -m
 ```
 
-`.AppImage` 是免安装便携版，但浏览器下载不会保留 Linux 的可执行权限。确认架构匹配后，首次运行前执行一次：
+输出 `x86_64` 时选择 x64/amd64 资产；输出 `aarch64` 或 `arm64` 时选择 ARM64 资产。
+
+Debian 安装包可通过系统软件安装器打开，也可使用：
+
+```bash
+sudo apt install ./onetime-api_*_amd64.deb
+sudo apt install ./onetime-api_*_arm64.deb
+```
+
+通过浏览器下载的 AppImage 通常不保留可执行权限。首次运行前需要执行：
 
 ```bash
 chmod +x onetime-api_*.AppImage
 ./onetime-api_*.AppImage
 ```
 
-自己构建的话需要 Rust 和 Node 18+，Linux 还要 webkit2gtk 那套依赖（见 [Tauri 文档](https://tauri.app/start/prerequisites/)）：
+## 更新
+
+应用启动后会查询 GitHub 最新正式 Release，检查结果最多缓存 6 小时。侧栏底部显示当前版本和更新状态；版本入口支持立即重新检查并打开最新 Release 页面。
+
+更新采用用户确认模式，应用不会在后台静默替换已安装程序。
+
+## 从源码构建
+
+构建环境需要 Rust、Node.js 18+，Linux 还需要 WebKitGTK 相关依赖，具体要求参见 [Tauri prerequisites](https://tauri.app/start/prerequisites/)。
 
 ```bash
 npm install
@@ -54,15 +83,11 @@ npm run tauri dev
 npm run tauri build
 ```
 
-## 更新
+## 安全说明
 
-应用启动后会自动检查 GitHub Releases，检查结果最多缓存 6 小时。侧栏底部会显示当前版本和更新状态；点击版本入口可以立即重新检查，并打开最新版本下载页。
+配置文件位于 `~/.config/onetime-api/config.json`；Windows 路径为 `%APPDATA%\onetime-api\config.json`。
 
-更新采用用户确认模式，不会在后台静默替换程序。Linux 用户仍需选择与 CPU 架构匹配的 `.deb` 或 `.AppImage`。
-
-## 注意
-
-配置存在 `~/.config/onetime-api/config.json`（Windows 是 `%APPDATA%\onetime-api`），key 是明文，别把这个文件同步出去。
+API Key 当前以明文形式保存在该文件中。请限制文件访问权限，并避免通过网盘、公开仓库或其他同步服务传播该文件。
 
 License: MIT
 

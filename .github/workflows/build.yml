@@ -32,9 +32,9 @@ jobs:
             args: "--target universal-apple-darwin --bundles dmg"
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -63,10 +63,10 @@ jobs:
           releaseName: ${{ github.ref_type == 'tag' && format('onetime-api {0}', github.ref_name) || '' }}
           releaseBody: |
             ### Download / 下载
-            - **Ubuntu / Debian:** choose the `.deb` matching your CPU — `amd64` for Intel/AMD, `arm64` for ARM devices. This is the recommended double-click install package.
-            - **Portable Linux:** AppImage files also need the matching CPU architecture. Browsers do not preserve the executable bit, so run `chmod +x <file>.AppImage` once before opening.
-            - **Windows:** use `setup.exe` for the simplest install. **macOS:** use the universal `.dmg`.
-            - The app checks this page for new versions automatically; installation remains user-confirmed.
+            - **Ubuntu / Debian:** `.deb` packages are available as `amd64` for x86_64 systems and `arm64` for ARM64 systems.
+            - **Portable Linux:** AppImages are published as `amd64` and `aarch64`. Browser downloads generally require `chmod +x <file>.AppImage` before the first launch.
+            - **Windows:** the `setup.exe` asset is the standard installer. **macOS:** the universal `.dmg` supports Intel and Apple Silicon.
+            - The application checks GitHub Releases automatically; installation remains user-confirmed.
           releaseDraft: false
           generateReleaseNotes: true
           args: ${{ matrix.args }}
